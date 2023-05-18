@@ -1,5 +1,5 @@
 *.zip
-./HatePolitics
-./movie/
-./data/
-.directory/
+HatePolitics/
+movie/
+data/
+.directory
