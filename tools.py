@@ -3,6 +3,7 @@ import json
 import os
 import xml.etree.ElementTree as ET
 from collections import Counter
+from enum import Enum
 from pprint import pprint
 from typing import Optional, Type
 
@@ -22,6 +23,12 @@ import crawler
 
 
 STOPWORDS = open('hit_stopwords.txt', 'r').read().split('\n')
+
+
+class CommentType(Enum):
+    Upvote = "pos"
+    Downvote = "neg"
+    Arrow = "neu"
 
 
 def filenameParser(filename: str) -> tuple[str, str, str]:
@@ -53,6 +60,12 @@ def getSummaryByContent(contents: list[str]) -> list[str]:
             summarizer(parser.document, 1)[0]._text
         )
     return summaries
+
+
+def getCommentsOfType(tree: ET, type: CommentType) -> str:
+    root = tree.getroot()
+    selected_comments = root.findall(f"./text/comment[@c_type='{type.value}']")
+    return str(len(selected_comments))
 
 
 # XML file format:
@@ -133,26 +146,19 @@ class GetPostIDsByDate(BaseTool):
 
 class GetArrowCount(BaseTool):
     """
-    Get upvote count of a post
+    Get arrow count of a post
     """
-    name = "get_upvote_count"
+    name = "get_arrow_count"
     description = """
     Input: post_id returned by get_posts_by_date (e.g. M.1672914887.A.04F)
-    Output: upvote count
+    Output: arrow count
     """
 
     def _run(self,
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         filename = findPostByID(query)
-        tree = ET.parse(filename)
-        root = tree.getroot()
-        arrow_count = 0
-        for comment in root.find("text").findall("comment"):
-            comment_type = comment.attrib['c_type']
-            if comment_type == 'neu':
-                arrow_count += 1
-        return str(arrow_count)
+        return getCommentsOfType(ET.parse(filename), CommentType.Arrow)
 
     async def _arun(self,
                     query: str,
@@ -164,24 +170,17 @@ class GetDownvoteCount(BaseTool):
     """
     Get upvote count of a post
     """
-    name = "get_upvote_count"
+    name = "get_downvote_count"
     description = """
     Input: post_id returned by get_posts_by_date (e.g. M.1672914887.A.04F)
-    Output: upvote count
+    Output: downvote count
     """
 
     def _run(self,
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         filename = findPostByID(query)
-        tree = ET.parse(filename)
-        root = tree.getroot()
-        downvote_count = 0
-        for comment in root.find("text").findall("comment"):
-            comment_type = comment.attrib['c_type']
-            if comment_type == 'neg':
-                downvote_count += 1
-        return str(downvote_count)
+        return getCommentsOfType(ET.parse(filename), CommentType.Downvote)
 
     async def _arun(self,
                     query: str,
@@ -203,14 +202,7 @@ class GetUpvoteCount(BaseTool):
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         filename = findPostByID(query)
-        tree = ET.parse(filename)
-        root = tree.getroot()
-        upvote_count = 0
-        for comment in root.find("text").findall("comment"):
-            comment_type = comment.attrib['c_type']
-            if comment_type == 'pos':
-                upvote_count += 1
-        return str(upvote_count)
+        return getCommentsOfType(ET.parse(filename), CommentType.Upvote)
 
     async def _arun(self,
                     query: str,
@@ -234,12 +226,10 @@ class GetPostTitle(BaseTool):
         filename = findPostByID(query)
         tree = ET.parse(filename)
         root = tree.getroot()
-        title_node = root.find("text").find("title")
-        title_text = [
-            "".join([word.text for word in sentence.findall("w")])
-            for sentence in title_node.findall("s")
-        ]
-        return "".join(title_text)
+        title_node = root.find("./text/title")
+        title_text = "".join(
+            [word.text for word in title_node.findall("./s/w")])
+        return title_text
 
     async def _arun(self,
                     query: str,
@@ -263,7 +253,7 @@ class GetPostBody(BaseTool):
         filename = findPostByID(query)
         tree = ET.parse(filename)
         root = tree.getroot()
-        body_node = root.find("text").find("body")
+        body_node = root.find("./text/body")
         body_text = [
             "".join([word.text for word in sentence.findall("w")]) for sentence in body_node.findall("s")
         ]
@@ -387,86 +377,86 @@ class GetTfidfKeywords(BaseTool):
 
 
 if __name__ == "__main__":
-    directory = './HatePolitics/2023'
-    files = os.listdir(directory)
-    files.sort()
+    # directory = './HatePolitics/2023'
+    # files = os.listdir(directory)
+    # files.sort()
 
-    start_date = 20230101
-    end_date = 20230131
-    in_range_post_ids = []
-    for filename in files:
-        date = int(filename[:8])
-        if date >= start_date and date <= end_date:
-            in_range_post_ids.append(filename)
+    # start_date = 20230101
+    # end_date = 20230131
+    # in_range_post_ids = []
+    # for filename in files:
+    #     date = int(filename[:8])
+    #     if date >= start_date and date <= end_date:
+    #         in_range_post_ids.append(filename)
 
-    # print(inrange_files)
-    print(len(in_range_post_ids))
+    # # print(inrange_files)
+    # print(len(in_range_post_ids))
 
-    # parse each xml file and get the author name
-    author_count = Counter()
-    min_score = 0
-    max_score = 0
-    min_author = ''
-    max_author = ''
-    min_title = ''
-    max_title = ''
+    # # parse each xml file and get the author name
+    # author_count = Counter()
+    # min_score = 0
+    # max_score = 0
+    # min_author = ''
+    # max_author = ''
+    # min_title = ''
+    # max_title = ''
 
-    for filename in in_range_post_ids:
-        tree = ET.parse(directory + '/' + filename)
-        root = tree.getroot()
-        author = root[0][1].text
-        title = root[0][5].text
-        author_count[author] += 1
+    # for filename in in_range_post_ids:
+    #     tree = ET.parse(directory + '/' + filename)
+    #     root = tree.getroot()
+    #     author = root[0][1].text
+    #     title = root[0][5].text
+    #     author_count[author] += 1
 
-        # loop through all comments
-        score = 0
-        for comment in root[1][2:]:
-            # print(comment)
-            # print(comment.attrib)
-            comment_type = comment.attrib['c_type']
-            if comment_type == 'pos':
-                score += 1
-            elif comment_type == 'neg':
-                score -= 1
+    #     # loop through all comments
+    #     score = 0
+    #     for comment in root[1][2:]:
+    #         # print(comment)
+    #         # print(comment.attrib)
+    #         comment_type = comment.attrib['c_type']
+    #         if comment_type == 'pos':
+    #             score += 1
+    #         elif comment_type == 'neg':
+    #             score -= 1
 
-        if score < min_score:
-            min_score = score
-            min_author = author
-            min_title = title
-        elif score > max_score:
-            max_score = score
-            max_author = author
-            max_title = title
+    #     if score < min_score:
+    #         min_score = score
+    #         min_author = author
+    #         min_title = title
+    #     elif score > max_score:
+    #         max_score = score
+    #         max_author = author
+    #         max_title = title
 
-    print(author_count.most_common(10))
-    print(min_score, min_author, min_title)
-    print(max_score, max_author, max_title)
+    # print(author_count.most_common(10))
+    # print(min_score, min_author, min_title)
+    # print(max_score, max_author, max_title)
 
-    filename = in_range_post_ids[0]
-    tree = ET.parse(directory + '/' + filename)
-    root = tree.getroot()
-    print(root[1][2].attrib)
+    # filename = in_range_post_ids[0]
+    # tree = ET.parse(directory + '/' + filename)
+    # root = tree.getroot()
+    # print(root[1][2].attrib)
 
     post_ids = json.loads(GetPostIDsByDate().run("20200102"))[:3]
     pprint(post_ids)
     for post_id in post_ids:
         print("="*10)
-        print(f"{GetUpvoteCount().run(post_id)} - {GetDownvoteCount().run(post_id)}")
+        print(f"{GetUpvoteCount().run(post_id)} 推 - {GetDownvoteCount().run(post_id)} 噓 - {GetArrowCount().run(post_id)} 箭頭")
         print(GetPostTitle().run(post_id))
-        print("\n".join(json.loads(GetPostBody().run(post_id))))
+        print("\n".join(json.loads(GetPostBody().run(post_id))[:2]))
 
-    dataset = [
-        '''
-        Extremely Severe Cyclonic Storm Mocha was a powerful and deadly tropical cyclone in the North Indian Ocean which affected Myanmar and parts of Bangladesh in May 2023. The second depression and the first cyclonic storm of the 2023 North Indian Ocean cyclone season, Mocha originated from a low-pressure area that was first noted by the India Meteorological Department (IMD) on 8 May. After consolidating into a depression, the storm tracked slowly north-northwestward over the Bay of Bengal, and reached extremely severe cyclonic storm intensity. After undergoing an eyewall replacement cycle, Mocha rapidly strengthened, peaking at Category 5-equivalent intensity on 14 May with winds of 280 km/h (175 mph), tying with Cyclone Fani as the strongest storm on record in the north Indian Ocean, in terms of 1-minute sustained winds. Mocha slightly weakened before making landfall, and its conditions quickly became unfavorable. Mocha rapidly weakened once inland and dissipated shortly thereafter.
-    Thousands of volunteers assisted citizens of Myanmar and Bangladesh in evacuating as the cyclone approached the international border.[6] Evacuations were also ordered for low-lying areas in Sittwe, Pauktaw, Myebon, Maungdaw, and Buthidaung. In Bangladesh, over 500,000 individuals were ordered to be relocated to coastal areas of the country due to the storm's approach. Officials from the military declared the state of Rakhine a natural disaster area. Several villages in Rakhine State were also damaged by the cyclone.
-    Cyclone Mocha killed at least 463 people, including three indirect deaths in Bangladesh. It also injured 719 people, and left 101 others missing.[7][5] The storm caused about US$1.07 million of damage in Bangladesh.[8] '''
-        'Kumquat plants have thornless branches and extremely glossy leaves. They bear dainty white flowers that occur in clusters or individually inside the leaf axils. The plants can reach a height from 2.5 to 4.5 metres (8.2 to 14.8 ft), with dense branches, sometimes bearing small thorns.[5] They bear yellowish-orange fruits that are oval or round in shape. The fruits can be 1 inch (2.5 cm) in diameter and have a sweet, pulpy skin and slightly acidic inner pulp. All the kumquat trees are self-pollinating. Kumquats can tolerate both frigid and hot temperatures',
-        '''The photo portrays fourteen Israeli soldiers in an abandoned barracks with traditional army dinnerware. Unlike the original painting, Nes' version lacks tension and shows the soldiers in private conversations, while the central figure (Jesus) "stares vacantly into space". The artist does not provide a specific interpretation, but expresses sympathy and hope that it is not their last meal together. One extra person is added to avoid "direct quotation" of Leonardo da Vinci.[7] The fourteenth man (standing at the left) is the only one, apart for the central figure, who is not engaged in a conversations and looks apart, and the only one whose uniform shows the Israeli Defense Forces patch''',
-        'Is this the first document?',
-    ]
-    tfIdfVectorizer = TfidfVectorizer(use_idf=True, stop_words=['the', 'in'])
-    tfIdf = tfIdfVectorizer.fit_transform(dataset)
-    df = pd.DataFrame(tfIdf[0].T.todense(
-    ), index=tfIdfVectorizer.get_feature_names_out(), columns=["TF-IDF"])
-    df = df.sort_values('TF-IDF', ascending=False)
-    print(df.head(5))
+    # dataset = [
+    #     '''
+    #     Extremely Severe Cyclonic Storm Mocha was a powerful and deadly tropical cyclone in the North Indian Ocean which affected Myanmar and parts of Bangladesh in May 2023. The second depression and the first cyclonic storm of the 2023 North Indian Ocean cyclone season, Mocha originated from a low-pressure area that was first noted by the India Meteorological Department (IMD) on 8 May. After consolidating into a depression, the storm tracked slowly north-northwestward over the Bay of Bengal, and reached extremely severe cyclonic storm intensity. After undergoing an eyewall replacement cycle, Mocha rapidly strengthened, peaking at Category 5-equivalent intensity on 14 May with winds of 280 km/h (175 mph), tying with Cyclone Fani as the strongest storm on record in the north Indian Ocean, in terms of 1-minute sustained winds. Mocha slightly weakened before making landfall, and its conditions quickly became unfavorable. Mocha rapidly weakened once inland and dissipated shortly thereafter.
+    # Thousands of volunteers assisted citizens of Myanmar and Bangladesh in evacuating as the cyclone approached the international border.[6] Evacuations were also ordered for low-lying areas in Sittwe, Pauktaw, Myebon, Maungdaw, and Buthidaung. In Bangladesh, over 500,000 individuals were ordered to be relocated to coastal areas of the country due to the storm's approach. Officials from the military declared the state of Rakhine a natural disaster area. Several villages in Rakhine State were also damaged by the cyclone.
+    # Cyclone Mocha killed at least 463 people, including three indirect deaths in Bangladesh. It also injured 719 people, and left 101 others missing.[7][5] The storm caused about US$1.07 million of damage in Bangladesh.[8] '''
+    #     'Kumquat plants have thornless branches and extremely glossy leaves. They bear dainty white flowers that occur in clusters or individually inside the leaf axils. The plants can reach a height from 2.5 to 4.5 metres (8.2 to 14.8 ft), with dense branches, sometimes bearing small thorns.[5] They bear yellowish-orange fruits that are oval or round in shape. The fruits can be 1 inch (2.5 cm) in diameter and have a sweet, pulpy skin and slightly acidic inner pulp. All the kumquat trees are self-pollinating. Kumquats can tolerate both frigid and hot temperatures',
+    #     '''The photo portrays fourteen Israeli soldiers in an abandoned barracks with traditional army dinnerware. Unlike the original painting, Nes' version lacks tension and shows the soldiers in private conversations, while the central figure (Jesus) "stares vacantly into space". The artist does not provide a specific interpretation, but expresses sympathy and hope that it is not their last meal together. One extra person is added to avoid "direct quotation" of Leonardo da Vinci.[7] The fourteenth man (standing at the left) is the only one, apart for the central figure, who is not engaged in a conversations and looks apart, and the only one whose uniform shows the Israeli Defense Forces patch''',
+    #     'Is this the first document?',
+    # ]
+    # tfIdfVectorizer = TfidfVectorizer(use_idf=True, stop_words=['the', 'in'])
+    # tfIdf = tfIdfVectorizer.fit_transform(dataset)
+    # df = pd.DataFrame(tfIdf[0].T.todense(
+    # ), index=tfIdfVectorizer.get_feature_names_out(), columns=["TF-IDF"])
+    # df = df.sort_values('TF-IDF', ascending=False)
+    # print(df.head(5))
