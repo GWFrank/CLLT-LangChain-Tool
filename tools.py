@@ -112,8 +112,10 @@ def getCommentsOfType(tree: ET, type: CommentType) -> str:
 #         raise NotImplementedError("custom_search does not support async")
 # ```
 
+class TempTool(BaseTool):
+    a
 
-class GetPostIDsByDate(BaseTool):
+class GetPostIDsByDate(TempTool):
     """
     Get ptt posts in the database, by date
     """
@@ -138,13 +140,9 @@ class GetPostIDsByDate(BaseTool):
                 in_range_post_ids.append(post_id)
         return json.dumps(in_range_post_ids, ensure_ascii=False)
 
-    async def _arun(self,
-                    query: str,
-                    run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetArrowCount(BaseTool):
+class GetArrowCount(TempTool):
     """
     Get arrow count of a post
     """
@@ -160,13 +158,9 @@ class GetArrowCount(BaseTool):
         filename = findPostByID(query)
         return getCommentsOfType(ET.parse(filename), CommentType.Arrow)
 
-    async def _arun(self,
-                    query: str,
-                    run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetDownvoteCount(BaseTool):
+class GetDownvoteCount(TempTool):
     """
     Get upvote count of a post
     """
@@ -182,13 +176,9 @@ class GetDownvoteCount(BaseTool):
         filename = findPostByID(query)
         return getCommentsOfType(ET.parse(filename), CommentType.Downvote)
 
-    async def _arun(self,
-                    query: str,
-                    run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetUpvoteCount(BaseTool):
+class GetUpvoteCount(TempTool):
     """
     Get upvote count of a post
     """
@@ -204,13 +194,9 @@ class GetUpvoteCount(BaseTool):
         filename = findPostByID(query)
         return getCommentsOfType(ET.parse(filename), CommentType.Upvote)
 
-    async def _arun(self,
-                    query: str,
-                    run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetPostTitle(BaseTool):
+class GetPostTitle(TempTool):
     """
     Get the title of a post by post_id
     """
@@ -231,13 +217,9 @@ class GetPostTitle(BaseTool):
             [word.text for word in title_node.findall("./s/w")])
         return title_text
 
-    async def _arun(self,
-                    query: str,
-                    run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetPostBody(BaseTool):
+class GetPostBody(TempTool):
     """
     Get the body of a post by post_id
     """
@@ -259,13 +241,9 @@ class GetPostBody(BaseTool):
         ]
         return json.dumps(body_text, ensure_ascii=False)
 
-    async def _arun(self,
-                    query: str,
-                    run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetPostsTitlesByCrawler(BaseTool):
+class GetPostsTitlesByCrawler(TempTool):
     """
     Get latest news posts titles from crawler
     Support website: 
@@ -284,15 +262,9 @@ class GetPostsTitlesByCrawler(BaseTool):
         titles = [post['title'] for post in posts]
         return json.dumps(titles)
 
-    async def _arun(
-        self,
-        query: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetPostsSummaryByCrawler(BaseTool):
+class GetPostsSummaryByCrawler(TempTool):
     """
     Get latest news posts summary content from crawler
     Summarize by package sumy using LsaSummarizer
@@ -323,15 +295,9 @@ class GetPostsSummaryByCrawler(BaseTool):
         summaries = summaries(contents)
         return json.dumps(summaries)
 
-    async def _arun(
-        self,
-        query: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetPostsKeywordsByCrawler(BaseTool):
+class GetPostsKeywordsByCrawler(TempTool):
     """
     Support website: 
         (default): https://news.pts.org.tw/category/1
@@ -352,15 +318,9 @@ class GetPostsKeywordsByCrawler(BaseTool):
         summaries = summaries(contents)
         return json.dumps(summaries)
 
-    async def _arun(
-        self,
-        query: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> str:
-        raise NotImplementedError("Doesn't support async")
 
 
-class GetTfidfKeywords(BaseTool):
+class GetTfidfKeywords(TempTool):
     name = "Tfidf"
     description = "try to extract keywords by tfidf"
 
@@ -370,10 +330,6 @@ class GetTfidfKeywords(BaseTool):
         """Use the tool."""
         dataset = eval(query)
         return "query"
-
-    async def _arun(self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None) -> str:
-        """Use the tool asynchronously."""
-        raise NotImplementedError("custom_search does not support async")
 
 
 if __name__ == "__main__":
