@@ -3,3 +3,5 @@ scikit-learn==1.2.1
 bs4
 requests
 sumy
+pandas
+spacy
