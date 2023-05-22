@@ -65,7 +65,7 @@ def getSummaryByContent(contents: list[str]) -> list[str]:
 def getCommentsOfType(tree: ET, type: CommentType) -> str:
     root = tree.getroot()
     selected_comments = root.findall(f"./text/comment[@c_type='{type.value}']")
-    return str(len(selected_comments))
+    return selected_comments
 
 
 # XML file format:
@@ -113,7 +113,9 @@ def getCommentsOfType(tree: ET, type: CommentType) -> str:
 # ```
 
 class TempTool(BaseTool):
-    a
+    async def _arun(self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None) -> str:
+        """Use the tool asynchronously."""
+        raise NotImplementedError("custom_search does not support async")
 
 class GetPostIDsByDate(TempTool):
     """
@@ -156,7 +158,7 @@ class GetArrowCount(TempTool):
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         filename = findPostByID(query)
-        return getCommentsOfType(ET.parse(filename), CommentType.Arrow)
+        return str(len(getCommentsOfType(ET.parse(filename), CommentType.Arrow)))
 
 
 
@@ -174,7 +176,7 @@ class GetDownvoteCount(TempTool):
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         filename = findPostByID(query)
-        return getCommentsOfType(ET.parse(filename), CommentType.Downvote)
+        return str(len(getCommentsOfType(ET.parse(filename), CommentType.Downvote)))
 
 
 
@@ -192,7 +194,7 @@ class GetUpvoteCount(TempTool):
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         filename = findPostByID(query)
-        return getCommentsOfType(ET.parse(filename), CommentType.Upvote)
+        return str(len(getCommentsOfType(ET.parse(filename), CommentType.Upvote)))
 
 
 
