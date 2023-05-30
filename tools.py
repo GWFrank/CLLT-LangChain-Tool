@@ -12,6 +12,7 @@ from langchain.tools import BaseTool
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
+import jieba.analyse
 
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
@@ -66,6 +67,11 @@ def getCommentsOfType(tree: ET, type: CommentType) -> str:
     root = tree.getroot()
     selected_comments = root.findall(f"./text/comment[@c_type='{type.value}']")
     return selected_comments
+
+def getKeywords(strings: list[str]):
+    concat = ' '.join(strings)
+    keywords = jieba.analyse.extract_tags(concat, topK=10, withWeight=False, allowPOS=())
+    return keywords
 
 
 # XML file format:
@@ -329,8 +335,8 @@ class GetTfidfKeywords(TempTool):
     def _run(self,
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        """Use the tool."""
-        dataset = eval(query)
+        
+        postBody = GetPostBody().run(query)
         return "query"
 
 
@@ -411,10 +417,4 @@ if __name__ == "__main__":
     #     'Kumquat plants have thornless branches and extremely glossy leaves. They bear dainty white flowers that occur in clusters or individually inside the leaf axils. The plants can reach a height from 2.5 to 4.5 metres (8.2 to 14.8 ft), with dense branches, sometimes bearing small thorns.[5] They bear yellowish-orange fruits that are oval or round in shape. The fruits can be 1 inch (2.5 cm) in diameter and have a sweet, pulpy skin and slightly acidic inner pulp. All the kumquat trees are self-pollinating. Kumquats can tolerate both frigid and hot temperatures',
     #     '''The photo portrays fourteen Israeli soldiers in an abandoned barracks with traditional army dinnerware. Unlike the original painting, Nes' version lacks tension and shows the soldiers in private conversations, while the central figure (Jesus) "stares vacantly into space". The artist does not provide a specific interpretation, but expresses sympathy and hope that it is not their last meal together. One extra person is added to avoid "direct quotation" of Leonardo da Vinci.[7] The fourteenth man (standing at the left) is the only one, apart for the central figure, who is not engaged in a conversations and looks apart, and the only one whose uniform shows the Israeli Defense Forces patch''',
     #     'Is this the first document?',
-    # ]
-    # tfIdfVectorizer = TfidfVectorizer(use_idf=True, stop_words=['the', 'in'])
-    # tfIdf = tfIdfVectorizer.fit_transform(dataset)
-    # df = pd.DataFrame(tfIdf[0].T.todense(
-    # ), index=tfIdfVectorizer.get_feature_names_out(), columns=["TF-IDF"])
-    # df = df.sort_values('TF-IDF', ascending=False)
-    # print(df.head(5))
+    
