@@ -43,6 +43,7 @@ def findPostByID(post_id: str) -> str:
         for filename in os.listdir(os.path.join("./HatePolitics/", year_dir)):
             if f"{post_id}" in filename:
                 return os.path.join("./HatePolitics/", year_dir, filename)
+    raise FileNotFoundError(f"Post {post_id} not found")
 
 
 def getSummaryByContent(contents: list[str]) -> list[str]:
@@ -54,12 +55,15 @@ def getSummaryByContent(contents: list[str]) -> list[str]:
     tokenizer = Tokenizer(LANGUAGE)
     summaries = []
     for content in contents:
-        parser = PlaintextParser.from_string(
-            content, tokenizer,
-        )
-        summaries.append(
-            summarizer(parser.document, 1)[0]._text
-        )
+        try:
+            parser = PlaintextParser.from_string(
+                content, tokenizer,
+            )
+            summaries.append(
+                summarizer(parser.document, 1)[0]._text
+            )
+        except:
+            summaries.append(content)
     return summaries
 
 
@@ -68,60 +72,28 @@ def getCommentsOfType(tree: ET, type: CommentType) -> str:
     selected_comments = root.findall(f"./text/comment[@c_type='{type.value}']")
     return selected_comments
 
+
 def getKeywords(strings: list[str]):
     concat = ' '.join(strings)
-    keywords = jieba.analyse.extract_tags(concat, topK=10, withWeight=False, allowPOS=())
+    keywords = jieba.analyse.extract_tags(
+        concat, topK=10, withWeight=False, allowPOS=())
     return keywords
 
 
-# XML file format:
-#
-# ```xml
-# <?xml version='1.0' encoding='utf-8'?>
-# <TEI.2>
-#    <teiHeader>
-#       <metadata name="media"></metadata>
-#       <metadata name="author"></metadata>
-#       <metadata name="post_id"></metadata>
-#       <metadata name="year"></metadata>
-#       <metadata name="board"></metadata>
-#       <metadata name="title"></metadata>
-#    </teiHeader>
-#    <text>
-#       <body author="">
-#          <s>
-#             <w type=""></w> <!-- type=詞性標記 -->
-#          </s>
-#       </body>
-#       <title author=""></title>
-#       <!-- c_type {pos: 推, neu: 箭頭, neg: 噓} -->
-#       <comment author="" c_type=""></comment>
-#    </text>
-# </TEI.2>
-# ```
-#
-# Template for a tool ([Reference](https://python.langchain.com/en/latest/modules/agents/tools/custom_tools.html))
-#
-# ```python
-# class TemplateTool(BaseTool):
-#     name = "custom_search"
-#     description = "useful for when you need to answer questions about current events"
-#
-#     def _run(self,
-#              query: str,
-#              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-#         """Use the tool."""
-#         return "query"
-#
-#     async def _arun(self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None) -> str:
-#         """Use the tool asynchronously."""
-#         raise NotImplementedError("custom_search does not support async")
-# ```
+def getCommentStringsOfType(tree: ET, type: CommentType) -> list[str]:
+    comments = getCommentsOfType(tree, type)
+    sentences = []
+    for comment in comments:
+        for s in comment.findall("./s"):
+            sentences.append("".join([w.text for w in s.findall("./w")]))
+    return sentences
+
 
 class TempTool(BaseTool):
     async def _arun(self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None) -> str:
         """Use the tool asynchronously."""
         raise NotImplementedError("custom_search does not support async")
+
 
 class GetPostIDsByDate(TempTool):
     """
@@ -149,7 +121,6 @@ class GetPostIDsByDate(TempTool):
         return json.dumps(in_range_post_ids, ensure_ascii=False)
 
 
-
 class GetArrowCount(TempTool):
     """
     Get arrow count of a post
@@ -165,7 +136,6 @@ class GetArrowCount(TempTool):
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         filename = findPostByID(query)
         return str(len(getCommentsOfType(ET.parse(filename), CommentType.Arrow)))
-
 
 
 class GetDownvoteCount(TempTool):
@@ -185,7 +155,6 @@ class GetDownvoteCount(TempTool):
         return str(len(getCommentsOfType(ET.parse(filename), CommentType.Downvote)))
 
 
-
 class GetUpvoteCount(TempTool):
     """
     Get upvote count of a post
@@ -201,7 +170,6 @@ class GetUpvoteCount(TempTool):
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         filename = findPostByID(query)
         return str(len(getCommentsOfType(ET.parse(filename), CommentType.Upvote)))
-
 
 
 class GetPostTitle(TempTool):
@@ -224,7 +192,6 @@ class GetPostTitle(TempTool):
         title_text = "".join(
             [word.text for word in title_node.findall("./s/w")])
         return title_text
-
 
 
 class GetPostBody(TempTool):
@@ -250,7 +217,6 @@ class GetPostBody(TempTool):
         return json.dumps(body_text, ensure_ascii=False)
 
 
-
 class GetPostsTitlesByCrawler(TempTool):
     """
     Get latest news posts titles from crawler
@@ -269,7 +235,6 @@ class GetPostsTitlesByCrawler(TempTool):
         posts = crawler.politic_news_crawler('pts', cnt=100)
         titles = [post['title'] for post in posts]
         return json.dumps(titles)
-
 
 
 class GetPostsSummaryByCrawler(TempTool):
@@ -304,7 +269,6 @@ class GetPostsSummaryByCrawler(TempTool):
         return json.dumps(summaries)
 
 
-
 class GetPostsKeywordsByCrawler(TempTool):
     """
     Support website: 
@@ -323,8 +287,9 @@ class GetPostsKeywordsByCrawler(TempTool):
     ) -> str:
         posts = crawler.politic_news_crawler('pts', cnt=100)
         contents = [post['content'] for post in posts]
-        summaries = summaries(contents)
-        return json.dumps(summaries)
+        keywords = getKeywords(contents)
+        return json.dumps(keywords)
+
 
 class GetPttPostsKeywordsByDate(TempTool):
     """
@@ -347,6 +312,28 @@ class GetPttPostsKeywordsByDate(TempTool):
             contents.append(json.loads(GetPostBody().run(post_id)))
         keywords = getKeywords(contents)
         return json.dumps(keywords)
+
+
+class GetTfidfKeywords(TempTool):
+    name = "Tfidf"
+    description = "try to extract keywords by tfidf"
+
+    def _run(self,
+             query: str,
+             run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        """Use the tool."""
+        dataset = eval(query)
+        return "query"
+
+
+class GetKeywordsVote(TempTool):
+    name = "get_keywords_vote"
+    description = "傳入關鍵字，獲得關鍵字的網路風向"
+
+    def _run(self,
+             query: str,
+             run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        pass
 
 
 if __name__ == "__main__":
@@ -426,4 +413,3 @@ if __name__ == "__main__":
     #     'Kumquat plants have thornless branches and extremely glossy leaves. They bear dainty white flowers that occur in clusters or individually inside the leaf axils. The plants can reach a height from 2.5 to 4.5 metres (8.2 to 14.8 ft), with dense branches, sometimes bearing small thorns.[5] They bear yellowish-orange fruits that are oval or round in shape. The fruits can be 1 inch (2.5 cm) in diameter and have a sweet, pulpy skin and slightly acidic inner pulp. All the kumquat trees are self-pollinating. Kumquats can tolerate both frigid and hot temperatures',
     #     '''The photo portrays fourteen Israeli soldiers in an abandoned barracks with traditional army dinnerware. Unlike the original painting, Nes' version lacks tension and shows the soldiers in private conversations, while the central figure (Jesus) "stares vacantly into space". The artist does not provide a specific interpretation, but expresses sympathy and hope that it is not their last meal together. One extra person is added to avoid "direct quotation" of Leonardo da Vinci.[7] The fourteenth man (standing at the left) is the only one, apart for the central figure, who is not engaged in a conversations and looks apart, and the only one whose uniform shows the Israeli Defense Forces patch''',
     #     'Is this the first document?',
-    
