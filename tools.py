@@ -326,18 +326,27 @@ class GetPostsKeywordsByCrawler(TempTool):
         summaries = summaries(contents)
         return json.dumps(summaries)
 
+class GetPttPostsKeywordsByDate(TempTool):
+    """
+    Get keywords of ptt posts by date
+    """
+    name = "get_ptt_posts_keywords_by_date"
+    description = """獲得近期PTT政治文章內文關鍵字
+    input: date (e.g. 20210101)
+    output: keywords"""
+    LANGUAGE = "chinese"
 
-
-class GetTfidfKeywords(TempTool):
-    name = "Tfidf"
-    description = "try to extract keywords by tfidf"
-
-    def _run(self,
-             query: str,
-             run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        
-        postBody = GetPostBody().run(query)
-        return "query"
+    def _run(
+        self,
+        query: str,
+        run_manager: Optional[CallbackManagerForToolRun] = None
+    ) -> str:
+        post_ids = json.loads(GetPostIDsByDate().run(query))
+        contents = []
+        for post_id in post_ids:
+            contents.append(json.loads(GetPostBody().run(post_id)))
+        keywords = getKeywords(contents)
+        return json.dumps(keywords)
 
 
 if __name__ == "__main__":
