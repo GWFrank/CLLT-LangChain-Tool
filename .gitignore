@@ -5,3 +5,4 @@ data/
 .directory
 __pycache__/
 .vscode/
+.env

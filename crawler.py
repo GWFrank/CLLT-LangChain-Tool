@@ -91,7 +91,7 @@ news2crawler = {
 
 def politic_news_crawler(news, cnt=10):
     if news in news2crawler.keys():
-        news2crawler[news](cnt)
+        return news2crawler[news](cnt)
     else:
         raise NotImplementedError
 

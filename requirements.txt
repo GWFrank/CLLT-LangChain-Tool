@@ -6,3 +6,11 @@ sumy
 pandas
 spacy
 jieba
+weaviate-client
+python-dotenv
+p_tqdm
+tqdm
+tiktoken
+openai
+streamlit
+streamlit-chat
