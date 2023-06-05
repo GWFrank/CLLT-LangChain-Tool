@@ -93,10 +93,10 @@ def getKeywords(strings: list[str]):
     concat = ' '.join(strings)
     print(f'Keyword: Total content length {len(concat)}')
     jieba.analyse.set_stop_words('hit_stopwords.txt')
-    # keywords = jieba.analyse.extract_tags(concat, topK=10, withWeight=False,
-    #                                       allowPOS=('ns','n','vn','v'))
-    keywords = jieba.analyse.textrank(concat, topK=50, withWeight=False,
-                                      allowPOS=('ns', 'n', 'vn', 'v'))
+    keywords = jieba.analyse.extract_tags(concat, topK=10, withWeight=False,
+                                          allowPOS=('ns','n','vn','v'))
+    # keywords = jieba.analyse.textrank(concat, topK=10, withWeight=False,
+    #                                   allowPOS=('ns', 'n', 'vn', 'v'))
     return keywords
 
 
@@ -150,6 +150,7 @@ class GetPostIDsByDate(TempTool):
     def _run(self,
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        query = query.strip()[-8:]
         year, month, day = query[:4], query[4:6], query[6:]
         assert len(year) == 4 and len(month) == 2 and len(day) == 2
         directory = f"./HatePolitics/{year}"
@@ -348,7 +349,7 @@ class GetPttPostsKeywordsByDate(TempTool):
     Get keywords of ptt posts by date
     """
     name = "get_ptt_posts_keywords_by_date"
-    description = """獲得近期PTT政治文章內文關鍵字
+    description = """獲得指定日期PTT政治板文章內文關鍵字
     input: date (e.g. 20210101)
     output: keywords"""
     LANGUAGE = "chinese"
@@ -386,7 +387,9 @@ def getVoteDateByFilenames(args):
 
 class GetKeywordsVote(TempTool):
     name = "get_keywords_vote"
-    description = "傳入關鍵字，獲得關鍵字的網路風向，回傳推文數、噓文數"
+    description = """獲得指定關鍵詞的推噓文數量
+    input: 關鍵詞（e.g. 總統）
+    output: 推噓文數量"""
 
     def _run(self,
              query: str,
@@ -399,7 +402,7 @@ class GetKeywordsVote(TempTool):
             getVoteByFilenames,
             file_name_list,
             max_workers=4,
-            ncols=30,
+            ncols=60,
         )
         for vote_count in vote_counts:
             up_vote_count += vote_count[0]
@@ -409,7 +412,9 @@ class GetKeywordsVote(TempTool):
 
 class GetKeywordsVoteTrend(TempTool):
     name = "get_keywords_vote_trend"
-    description = "傳入關鍵字，獲得關鍵字的網路風向隨時間變化，回傳推文數、噓文數"
+    description = """獲得關鍵字在不同時間的推噓文數量
+    input: 關鍵詞（e.g. 總統）
+    output: 不同時間的推噓文數量"""
 
     def _run(self,
              query: str,
@@ -445,7 +450,9 @@ class GetKeywordsVoteTrend(TempTool):
 
 class GetUpvoteCommentsByKeyword(TempTool):
     name = "get_upvote_comments_by_keyword"
-    description = "傳入關鍵字，獲得關鍵字的正面評論"
+    description = """獲得和指定關鍵詞相關的推文
+    input: 關鍵詞（e.g. 總統）
+    output: 數個推文（以 "," 分隔）"""
 
     def _run(self,
              query: str,
@@ -459,12 +466,14 @@ class GetUpvoteCommentsByKeyword(TempTool):
                 up_vote_comments.extend(comments)
             except:
                 continue
-        return f'關鍵字「{query}」評論：'+'|'.join(random.sample(up_vote_comments, k=min(5, len(up_vote_comments))))
+        return ', '.join(random.sample(up_vote_comments, k=min(5, len(up_vote_comments))))
 
 
-class GetDownvoteCommentsByKeyword:
+class GetDownvoteCommentsByKeyword(TempTool):
     name = "get_downvote_comments_by_keyword"
-    description = "傳入關鍵字，獲得關鍵字的負面評論"
+    description = """獲得和指定關鍵詞相關的噓文
+    input: 關鍵詞（e.g. 總統）
+    output: 數個推文（以 "," 分隔）"""
     def _run(self,
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
@@ -474,7 +483,7 @@ class GetDownvoteCommentsByKeyword:
         for post_id in post_ids:
             comments = getDownvoteComments(post_id)
             up_vote_comments.extend(comments)
-        return f'關鍵字「{query}」評論：'+'|'.join(random.sample(up_vote_comments, k=min(5, len(up_vote_comments))))
+        return ', '.join(random.sample(up_vote_comments, k=min(5, len(up_vote_comments))))
 
 
 if __name__ == "__main__":
