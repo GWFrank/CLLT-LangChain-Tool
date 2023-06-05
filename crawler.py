@@ -13,7 +13,7 @@ def pts_crawler(cnt):
         page_res = requests.get(base_url, {'page': page})
         if page_res.status_code != requests.codes.ok:
             continue
-        page_soup = BeautifulSoup(page_res.text, 'html')
+        page_soup = BeautifulSoup(page_res.text, "lxml")
         urls = [a.get('href') for a in page_soup.select('a') if a.get('href') != None]
         urls = set(url for url in urls if url_reg.match(url) != None)
         post_urls = post_urls.union(urls)
@@ -25,7 +25,7 @@ def pts_crawler(cnt):
         post_res = requests.get(post_url, timeout=3)
         if post_res.status_code != requests.codes.ok:
             continue
-        post_soup = BeautifulSoup(post_res.text, 'html')
+        post_soup = BeautifulSoup(post_res.text, "lxml")
         title = post_soup.select('h1', {'class': 'article-title'})[0].text
         title = post_soup.select('h1')[0].text.strip()
         datetime = post_soup.find_all(
@@ -55,7 +55,7 @@ def ttv_crawler(cnt):
         page_res = requests.get(page_url, timeout=3)
         if page_res.status_code != requests.codes.ok:
             continue
-        page_soup = BeautifulSoup(page_res.text, 'html')
+        page_soup = BeautifulSoup(page_res.text, "lxml")
         for tag in page_soup.select('main')[0].select('a'):
             post_urls.add(tag.get('href'))
             if len(post_urls) >= cnt:
@@ -67,7 +67,7 @@ def ttv_crawler(cnt):
         post_res = requests.get(post_url, timeout=3)
         if post_res.status_code != requests.codes.ok:
             continue
-        post_soup = BeautifulSoup(post_res.text, 'html')
+        post_soup = BeautifulSoup(post_res.text, "lxml")
         title = post_soup.select('h1')[0].text.strip()
         datetime = post_soup.find_all(
                     'li', {'class': 'date time'}

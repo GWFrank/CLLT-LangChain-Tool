@@ -31,7 +31,8 @@ from sumy.utils import get_stop_words
 import crawler
 import weviate_tool
 
-STOPWORDS = open('hit_stopwords.txt', 'r').read().split('\n')
+with open("hit_stopwords.txt", "r") as f:
+    STOPWORDS = f.read().split('\n')
 with open("post_index.json", "r") as f:
     POST_INDEX = json.load(f)
 load_dotenv('.env')
@@ -142,7 +143,7 @@ class GetPostIDsByDate(TempTool):
     Get ptt posts in the database, by date
     """
     name = "get_post_ids_by_date"
-    description = """ 獲取指定日期的文章ID
+    description = """獲取指定日期的文章ID
     Input: date in format YYYYMMDD (e.g. 20200101)
     Output: JSON 格式的 list of post ids 
     """
@@ -164,12 +165,12 @@ class GetPostIDsByDate(TempTool):
         return json.dumps(in_range_post_ids, ensure_ascii=False)
 
 
-class GetArrowCount(TempTool):
+class GetArrowCountByID(TempTool):
     """
     Get arrow count of a post
     """
-    name = "get_arrow_count"
-    description = """獲得指定文章的普通留言數
+    name = "get_arrow_count_by_id"
+    description = """獲得指定文章ID的普通留言數
     Input: post_id (e.g. M.1672914887.A.04F)
     Output: 普通留言數
     """
@@ -181,12 +182,12 @@ class GetArrowCount(TempTool):
         return str(len(getCommentsOfType(ET.parse(filename), CommentType.Arrow)))
 
 
-class GetDownvoteCount(TempTool):
+class GetDownvoteCountByID(TempTool):
     """
     Get upvote count of a post
     """
-    name = "get_downvote_count"
-    description = """獲得指定文章的噓文數
+    name = "get_downvote_count_by_id"
+    description = """獲得指定文章ID的噓文數
     Input: post_id (e.g. M.1672914887.A.04F)
     Output: 噓文數
     """
@@ -198,12 +199,12 @@ class GetDownvoteCount(TempTool):
         return str(len(getCommentsOfType(ET.parse(filename), CommentType.Downvote)))
 
 
-class GetUpvoteCount(TempTool):
+class GetUpvoteCountByID(TempTool):
     """
     Get upvote count of a post
     """
-    name = "get_upvote_count"
-    description = """獲得指定文章的推文數
+    name = "get_upvote_count_by_id"
+    description = """獲得指定文章ID的推文數
     Input: post_id (e.g. M.1672914887.A.04F)
     Output: 推文數
     """
@@ -215,12 +216,12 @@ class GetUpvoteCount(TempTool):
         return str(len(getCommentsOfType(ET.parse(filename), CommentType.Upvote)))
 
 
-class GetPostTitle(TempTool):
+class GetPostTitleByID(TempTool):
     """
     Get the title of a post by post_id
     """
-    name = "get_post_title"
-    description = """獲得指定文章的標題
+    name = "get_post_title_by_id"
+    description = """獲得指定文章ID的標題
     Input: post_id (e.g. M.1672914887.A.04F)
     Output: 標題
     """
@@ -248,13 +249,12 @@ class GetPostTitle(TempTool):
                     title_text += word.text
         return title_text
 
-
-class GetPostBody(TempTool):
+class GetPostContentByID(TempTool):
     """
-    Get the body of a post by post_id
+    Get the content of a post by post_id
     """
-    name = "get_post_body"
-    description = """ 獲取文章內文
+    name = "get_post_content_by_id"
+    description = """獲取指定文章ID的內文
     Input: post_id (e.g. M.1672914887.A.04F)
     Output: list of sentences in the body
     """
@@ -280,15 +280,35 @@ class GetPostBody(TempTool):
         return json.dumps(body_text, ensure_ascii=False)
 
 
-class GetPostsTitlesByCrawler(TempTool):
+class GetPostKeywordsByID(TempTool):
     """
-    Get latest news posts titles from crawler
+    Get the keywords of a post by post_id
+    """
+    name = "get_post_keywords_by_id"
+    description = """獲取指定文章ID的內文關鍵字
+    Input: post_id (e.g. M.1672914887.A.04F)
+    Output: list of sentences
+    """
+
+    def _run(self,
+             query: str,
+             run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        body_text = json.loads(GetPostContentByID().run(query))
+        keywords = getKeywords(body_text)
+        return json.dumps(keywords, ensure_ascii=False)
+
+class GetNewsTitlesWithCrawler(TempTool):
+    """
+    Get latest news titles from crawler
     Support website: 
         (default): https://news.pts.org.tw/category/1
         https://news.ttv.com.tw/category/%E6%94%BF%E6%B2%BB
     """
-    name = "get_posts_titles_by_crawler"
-    description = "獲得近期政治新聞標題"
+    name = "get_news_titles_with_crawler"
+    description = """獲得近期政治新聞標題
+    Input: empty string
+    Output: list of titles
+    """
 
     def _run(
         self,
@@ -300,7 +320,7 @@ class GetPostsTitlesByCrawler(TempTool):
         return json.dumps(titles, ensure_ascii=False)
 
 
-class GetPostsSummaryByCrawler(TempTool):
+class GetNewsSummaryWithCrawler(TempTool):
     """
     Get latest news posts summary content from crawler
     Summarize by package sumy using LsaSummarizer
@@ -308,8 +328,10 @@ class GetPostsSummaryByCrawler(TempTool):
         (default): https://news.pts.org.tw/category/1
         https://news.ttv.com.tw/category/%E6%94%BF%E6%B2%BB
     """
-    name = "get_posts_titles_by_crawler"
-    description = "獲得近期政治新聞內文概述"
+    name = "get_news_summary_with_crawler"
+    description = """獲得近期政治新聞內文概述
+    Input: empty string
+    Output: list of summaries"""
 
     def _run(
         self,
@@ -322,14 +344,16 @@ class GetPostsSummaryByCrawler(TempTool):
         return json.dumps(summaries, ensure_ascii=False)
 
 
-class GetPostsKeywordsByCrawler(TempTool):
+class GetNewsKeywordsWithCrawler(TempTool):
     """
     Support website: 
         (default): https://news.pts.org.tw/category/1
         https://news.ttv.com.tw/category/%E6%94%BF%E6%B2%BB
     """
-    name = "get_posts_titles_by_crawler"
-    description = "獲得近期政治新聞內文關鍵字"
+    name = "get_news_keywords_with_crawler"
+    description = """獲得近期政治新聞內文關鍵字
+    Input: empty string
+    Output: list of keywords"""
     LANGUAGE = "chinese"
     tokenizer = Tokenizer(LANGUAGE)
 
@@ -344,11 +368,11 @@ class GetPostsKeywordsByCrawler(TempTool):
         return json.dumps(keywords, ensure_ascii=False)
 
 
-class GetPttPostsKeywordsByDate(TempTool):
+class GetPttPostsKeywordsOnDate(TempTool):
     """
-    Get keywords of ptt posts by date
+    Get keywords of ptt posts of a specific date
     """
-    name = "get_ptt_posts_keywords_by_date"
+    name = "get_ptt_posts_keywords_of_date"
     description = """獲得指定日期PTT政治板文章內文關鍵字
     input: date (e.g. 20210101)
     output: keywords"""
@@ -362,7 +386,7 @@ class GetPttPostsKeywordsByDate(TempTool):
         post_ids = json.loads(GetPostIDsByDate().run(query))
         contents = []
         for post_id in post_ids:
-            contents += json.loads(GetPostBody().run(post_id))
+            contents += json.loads(GetPostContentByID().run(post_id))
         keywords = getKeywords(contents)
         return json.dumps(keywords, ensure_ascii=False)
 
@@ -370,18 +394,18 @@ class GetPttPostsKeywordsByDate(TempTool):
 def getVoteByFilenames(args):
     file_name, query = args
     date, time, post_id = filenameParser(file_name)
-    content = GetPostBody().run(post_id)
+    content = GetPostContentByID().run(post_id)
     if query in content:
-        return int(GetUpvoteCount().run(post_id)), int(GetDownvoteCount().run(post_id))
+        return int(GetUpvoteCountByID().run(post_id)), int(GetDownvoteCountByID().run(post_id))
     return 0, 0
 
 
 def getVoteDateByFilenames(args):
     file_name, query = args
     date, time, post_id = filenameParser(file_name)
-    content = GetPostBody().run(post_id)
+    content = GetPostContentByID().run(post_id)
     if query in content:
-        return date, int(GetUpvoteCount().run(post_id)), int(GetDownvoteCount().run(post_id))
+        return date, int(GetUpvoteCountByID().run(post_id)), int(GetDownvoteCountByID().run(post_id))
     return date, 0, 0
 
 
@@ -403,11 +427,12 @@ class GetKeywordsVote(TempTool):
             file_name_list,
             max_workers=4,
             ncols=60,
+            chunksize=1,
         )
         for vote_count in vote_counts:
             up_vote_count += vote_count[0]
             down_vote_count += vote_count[1]
-        return f'關鍵字 {query}|推：{up_vote_count}、噓：{down_vote_count}、推/噓比：{up_vote_count/(down_vote_count+1e-12)}'
+        return f'關鍵字 {query} | 推：{up_vote_count}、噓：{down_vote_count}、推/噓比：{up_vote_count/(down_vote_count+1e-12)}'
 
 
 class GetKeywordsVoteTrend(TempTool):
@@ -427,7 +452,7 @@ class GetKeywordsVoteTrend(TempTool):
             getVoteDateByFilenames,
             file_name_list,
             max_workers=4,
-            ncols=30,
+            ncols=60,
             chunksize=1,
         )
         for date, up_vote_count, down_vote_count in vote_counts:
@@ -442,9 +467,9 @@ class GetKeywordsVoteTrend(TempTool):
             up_vote_count = up_vote_counts[year]
             down_vote_count = down_vote_counts[year]
             if down_vote_count == 0:
-                fmt += f'\n{year}年|推：{up_vote_count}、噓：{down_vote_count}、推/噓比：N/A|'
+                fmt += f'\n{year}年 | 推：{up_vote_count}、噓：{down_vote_count}、推/噓比：N/A |'
             else:
-                fmt += f'\n{year}年|推：{up_vote_count}、噓：{down_vote_count}、推/噓比：{up_vote_count/(down_vote_count):.2f}|'
+                fmt += f'\n{year}年 | 推：{up_vote_count}、噓：{down_vote_count}、推/噓比：{up_vote_count/(down_vote_count):.2f} |'
         return fmt
 
 
@@ -504,7 +529,7 @@ if __name__ == "__main__":
     # print(GetKeywordsVoteTrend().run("無能"))
     # print(GetUpvoteCommentsByKeyword().run('水桶'))
     # print(GetUpvoteCommentsByKeyword().run('柯文哲'))
-    print(GetPostsSummaryByCrawler().run(''))
+    print(GetNewsSummaryWithCrawler().run(''))
 
     # post_ids = json.loads(GetPostIDsByDate().run("20230211"))
     # pprint(post_ids)
