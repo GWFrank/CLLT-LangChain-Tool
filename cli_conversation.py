@@ -8,7 +8,7 @@ from langchain.memory import ConversationBufferMemory
 
 import tools
 
-VERBOSE = True
+VERBOSE = False
 
 class Colors:
     # ANSI Color Code Reference: https://gist.github.com/rene-d/9e584a7dd2935d0f461904b9f2950007
