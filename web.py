@@ -24,23 +24,25 @@ def load_agent():
                      verbose=True,
                      temperature=0,
                      client=None,)
-    # memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     tool_list = [tools.GetPttPostsKeywordsOnDate(),
                  tools.GetKeywordsVote(),
                  tools.GetKeywordsVoteTrend(),
                  tools.GetUpvoteCommentsByKeyword(),
                  tools.GetDownvoteCommentsByKeyword(),
+
                  tools.GetPostIDsByDate(),
+                 tools.GetPostKeywordsByID(),
+                 tools.GetPostTitleByID(),
                  tools.GetUpvoteCountByID(),
                  tools.GetDownvoteCountByID(),
                  tools.GetArrowCountByID(),
+                 
                  tools.GetNewsTitlesWithCrawler(),
-                 tools.GetNewsKeywordsWithCrawler(),]
+                 tools.GetNewsKeywordsWithCrawler(),
+                 ]
     agent = initialize_agent(tool_list,
                              llm,
                              agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-                            #  agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
-                            #  memory=memory,
                              handle_parsing_errors=True,
                              verbose=True)
     
@@ -59,10 +61,6 @@ if "past" not in st.session_state:
     st.session_state["past"] = []
 
 
-agent.run("""你是一個臺灣 PTT 使用者及政治觀察家，請使用提供的 tools 完成後面提供給你的工作，並使用臺灣的中文回答問題。
-    有些提供的 tool 完全不會使用到，但是你可以自己決定要不要使用，請盡量用最少的步驟完成工作。
-    你目前不需要有任何動作。""")
-
 def get_text():
     input_text = st.text_input("You: ", "請給我 2023/01/08 PTT 貼文的關鍵詞，不需要做其他分析", key="input")
     return input_text
@@ -71,7 +69,10 @@ def get_text():
 user_input = get_text()
 
 if user_input:
-    propmt = f"你的工作是：\n{user_input}"
+    propmt = f""""你是一個臺灣 PTT 使用者及政治觀察家，請使用提供的 tools 完成後面提供給你的工作，並使用臺灣的中文回答問題。
+    有些提供的 tool 完全不會使用到，但是你可以自己決定要不要使用，請盡量用最少的步驟完成工作。
+    你的工作是：
+    {user_input}"""
     output = agent.run(propmt)
 
     st.session_state["past"].append(user_input)
@@ -82,5 +83,3 @@ if st.session_state["generated"]:
     for i in range(len(st.session_state["generated"]) - 1, -1, -1):
         message(st.session_state["generated"][i], key=str(i))
         message(st.session_state["past"][i], is_user=True, key=str(i) + "_user")
-
-sleep(0.5)

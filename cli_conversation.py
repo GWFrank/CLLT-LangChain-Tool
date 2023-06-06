@@ -46,8 +46,8 @@ def load_agent():
                      verbose=VERBOSE,
                      temperature=0,
                      client=None,)
-    memory = ConversationBufferMemory(
-        memory_key="chat_history", return_messages=True)
+    memory = ConversationBufferMemory(memory_key="chat_history",
+                                      return_messages=True)
     tool_list = [tools.GetPttPostsKeywordsOnDate(),
                  tools.GetKeywordsVote(),
                  tools.GetKeywordsVoteTrend(),
@@ -55,7 +55,6 @@ def load_agent():
                  tools.GetDownvoteCommentsByKeyword(),
 
                  tools.GetPostIDsByDate(),
-                #  tools.GetPostContentByID(),
                  tools.GetPostKeywordsByID(),
                  tools.GetPostTitleByID(),
                  tools.GetUpvoteCountByID(),
@@ -67,7 +66,7 @@ def load_agent():
                  ]
     agent = initialize_agent(tool_list,
                              llm,
-                             #  agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                            #   agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
                              agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
                              memory=memory,
                              handle_parsing_errors=True,
