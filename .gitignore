@@ -1,8 +1,12 @@
+# Sensitive data
 *.zip
+data/
 HatePolitics/
 movie/
-data/
-.directory
+post_index.json
+.env
+
 __pycache__/
 .vscode/
-.env
+
+.directory
