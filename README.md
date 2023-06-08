@@ -20,10 +20,10 @@ pip install -r requirements.txt
 
 ## Usage
 
-If you want to import the tools in your Python script, you can use the following code:
+Before importing our tools or using our interfaces, you should index the corpus first:
 
 ```python
-import tools
+python index.py
 ```
 
 If you want to interact with the tools, you can use either the command line interface or the web interface. We recommend using the command line interface because it uses conversational agent, which is easier to use in a chat setting.
