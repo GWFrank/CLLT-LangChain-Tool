@@ -1,6 +1,5 @@
 import dataclasses
 from dataclasses import dataclass
-from pprint import pprint
 import os
 import weaviate
 from langchain.retrievers.weaviate_hybrid_search import WeaviateHybridSearchRetriever

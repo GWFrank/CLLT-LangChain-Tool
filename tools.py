@@ -5,14 +5,11 @@ import random
 import re
 import xml.etree.ElementTree as ET
 from enum import Enum
-from pprint import pprint
 from typing import Optional
 
-import pandas as pd
 import jieba.analyse
 from langchain.tools import BaseTool
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
-from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import process_map
 from dotenv import load_dotenv
 
