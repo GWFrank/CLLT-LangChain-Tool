@@ -10,6 +10,7 @@ import tools
 
 VERBOSE = False
 
+
 class Colors:
     # ANSI Color Code Reference: https://gist.github.com/rene-d/9e584a7dd2935d0f461904b9f2950007
     """ ANSI color codes """
@@ -60,13 +61,13 @@ def load_agent():
                  tools.GetUpvoteCountByID(),
                  tools.GetDownvoteCountByID(),
                  tools.GetArrowCountByID(),
-                 
+
                  tools.GetNewsTitlesWithCrawler(),
                  tools.GetNewsKeywordsWithCrawler(),
                  ]
     agent = initialize_agent(tool_list,
                              llm,
-                            #   agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                             #   agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
                              agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
                              memory=memory,
                              handle_parsing_errors=True,
@@ -74,10 +75,12 @@ def load_agent():
 
     return agent
 
+
 def talk_to_agent(agent, msg: str):
     print("Thinking...")
     ret = agent.run(msg)
     print(f"{Colors.LIGHT_BLUE}LLM: {ret}{Colors.END}")
+
 
 def main():
     print("==== CLLT Final Project - Demo ====")

@@ -3,6 +3,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+
 def pts_crawler(cnt):
     base_url = 'https://news.pts.org.tw/category/1'
     page = 1
@@ -14,7 +15,8 @@ def pts_crawler(cnt):
         if page_res.status_code != requests.codes.ok:
             continue
         page_soup = BeautifulSoup(page_res.text, "lxml")
-        urls = [a.get('href') for a in page_soup.select('a') if a.get('href') != None]
+        urls = [a.get('href')
+                for a in page_soup.select('a') if a.get('href') != None]
         urls = set(url for url in urls if url_reg.match(url) != None)
         post_urls = post_urls.union(urls)
         if len(post_urls) >= cnt:
@@ -29,12 +31,12 @@ def pts_crawler(cnt):
         title = post_soup.select('h1', {'class': 'article-title'})[0].text
         title = post_soup.select('h1')[0].text.strip()
         datetime = post_soup.find_all(
-                    'span', {'class': 'text-nowrap'}
-                   )[0].text
+            'span', {'class': 'text-nowrap'}
+        )[0].text
         content = ''.join(p.text for p in post_soup.select('p'))
         editor = post_soup.find_all(
-                    'span', {'class': 'article-reporter mr-2'}
-                 )[0].text
+            'span', {'class': 'article-reporter mr-2'}
+        )[0].text
         posts.append(
             {
                 'title': title,
@@ -44,6 +46,7 @@ def pts_crawler(cnt):
             }
         )
     return posts
+
 
 def ttv_crawler(cnt):
     base_url = 'https://news.ttv.com.tw/category/%E6%94%BF%E6%B2%BB'
@@ -70,8 +73,8 @@ def ttv_crawler(cnt):
         post_soup = BeautifulSoup(post_res.text, "lxml")
         title = post_soup.select('h1')[0].text.strip()
         datetime = post_soup.find_all(
-                    'li', {'class': 'date time'}
-                   )[0].text.strip()
+            'li', {'class': 'date time'}
+        )[0].text.strip()
         content = ''.join(p.text for p in post_soup.select('p')[:-1])
         editor = post_soup.select('p')[-1].text
         posts.append(
@@ -84,14 +87,15 @@ def ttv_crawler(cnt):
         )
     return posts
 
+
 news2crawler = {
     'pts': pts_crawler,
     'ttv': ttv_crawler,
 }
+
 
 def politic_news_crawler(news, cnt=10):
     if news in news2crawler.keys():
         return news2crawler[news](cnt)
     else:
         raise NotImplementedError
-

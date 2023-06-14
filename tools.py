@@ -1,23 +1,17 @@
-# import datetime
 import glob
 import json
 import os
 import random
 import re
 import xml.etree.ElementTree as ET
-# from collections import Counter
 from enum import Enum
-# from functools import lru_cache
 from pprint import pprint
 from typing import Optional
 
-# from bs4 import BeautifulSoup
 import pandas as pd
-# import jieba
 import jieba.analyse
 from langchain.tools import BaseTool
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
-# from sklearn.feature_extraction.text import TfidfVectorizer
 from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import process_map
 from dotenv import load_dotenv
@@ -37,24 +31,23 @@ with open("post_index.json", "r") as f:
     POST_INDEX = json.load(f)
 load_dotenv('.env')
 
+
 class CommentType(Enum):
     Upvote = "pos"
     Downvote = "neg"
     Arrow = "neu"
+
 
 def filenameParser(filename: str) -> tuple[str, str, str]:
     filename = filename[:-4]
     date, time, post_id = filename.split('_')
     return date, time, post_id
 
+
 def findPostByID(post_id: str) -> str:
     if post_id in POST_INDEX:
         return POST_INDEX[post_id]
 
-    # for year_dir in os.listdir("./HatePolitics/"):
-    #     for filename in os.listdir(os.path.join("./HatePolitics/", year_dir)):
-    #         if f"{post_id}" in filename:
-    #             return os.path.join("./HatePolitics/", year_dir, filename)
     raise FileNotFoundError(f"Post {post_id} not found")
 
 
@@ -95,9 +88,7 @@ def getKeywords(strings: list[str]):
     print(f'Keyword: Total content length {len(concat)}')
     jieba.analyse.set_stop_words('hit_stopwords.txt')
     keywords = jieba.analyse.extract_tags(concat, topK=10, withWeight=False,
-                                          allowPOS=('ns','n','vn','v'))
-    # keywords = jieba.analyse.textrank(concat, topK=10, withWeight=False,
-    #                                   allowPOS=('ns', 'n', 'vn', 'v'))
+                                          allowPOS=('ns', 'n', 'vn', 'v'))
     return keywords
 
 
@@ -109,26 +100,32 @@ def getCommentStringsOfType(tree: ET, type: CommentType) -> list[str]:
             sentences.append("".join([w.text for w in s.findall("./w")]))
     return sentences
 
+
 def getUpvoteComments(post_id):
     return getCommentStringsOfType(ET.parse(findPostByID(post_id)), CommentType.Upvote)
+
 
 def getDownvoteComments(post_id):
     return getCommentStringsOfType(ET.parse(findPostByID(post_id)), CommentType.Downvote)
 
+
 def getArrowvoteComments(post_id):
     return getCommentStringsOfType(ET.parse(findPostByID(post_id)), CommentType.Arrow)
+
 
 def getPostIdByKeyword(keyword: str, count=5) -> list[str]:
     docs = weviate_tool.retrieve_docs(keyword, count=100)
     return [doc.metadata['post_id'] for doc in docs]
+
 
 def _getPostIdByKeyword(keyword: str, count=5) -> list[str]:
     """
     Pseudo function for getPostIdByKeyword
     """
     post_id_list = [f.split("/")[-1].split("_")[-1][:-4]
-                for f in glob.glob("./HatePolitics/*/*.xml")]
+                    for f in glob.glob("./HatePolitics/*/*.xml")]
     return post_id_list[:count]
+
 
 class TempTool(BaseTool):
     LANGUAGE = 'chinese'
@@ -249,6 +246,7 @@ class GetPostTitleByID(TempTool):
                     title_text += word.text
         return title_text
 
+
 class GetPostContentByID(TempTool):
     """
     Get the content of a post by post_id
@@ -297,6 +295,7 @@ class GetPostKeywordsByID(TempTool):
         keywords = getKeywords(body_text)
         return json.dumps(keywords, ensure_ascii=False)
 
+
 class GetNewsTitlesWithCrawler(TempTool):
     """
     Get latest news titles from crawler
@@ -331,7 +330,8 @@ class GetNewsSummaryWithCrawler(TempTool):
     name = "get_news_summary_with_crawler"
     description = """獲得近期政治新聞內文概述
     Input: empty string
-    Output: list of summaries"""
+    Output: list of summaries
+    """
 
     def _run(
         self,
@@ -353,7 +353,9 @@ class GetNewsKeywordsWithCrawler(TempTool):
     name = "get_news_keywords_with_crawler"
     description = """獲得近期政治新聞內文關鍵字
     Input: empty string
-    Output: list of keywords"""
+    Output: list of keywords
+    """
+
     LANGUAGE = "chinese"
     tokenizer = Tokenizer(LANGUAGE)
 
@@ -412,8 +414,9 @@ def getVoteDateByFilenames(args):
 class GetKeywordsVote(TempTool):
     name = "get_keywords_vote"
     description = """獲得指定關鍵詞的推噓文數量
-    input: 關鍵詞（e.g. 總統）
-    output: 推噓文數量"""
+    Input: 關鍵詞（e.g. 總統）
+    Output: 推噓文數量
+    """
 
     def _run(self,
              query: str,
@@ -438,8 +441,9 @@ class GetKeywordsVote(TempTool):
 class GetKeywordsVoteTrend(TempTool):
     name = "get_keywords_vote_trend"
     description = """獲得關鍵字在不同時間的推噓文數量
-    input: 關鍵詞（e.g. 總統）
-    output: 不同時間的推噓文數量"""
+    Input: 關鍵詞（e.g. 總統）
+    Output: 不同時間的推噓文數量
+    """
 
     def _run(self,
              query: str,
@@ -476,8 +480,9 @@ class GetKeywordsVoteTrend(TempTool):
 class GetUpvoteCommentsByKeyword(TempTool):
     name = "get_upvote_comments_by_keyword"
     description = """獲得和指定關鍵詞相關的推文
-    input: 關鍵詞（e.g. 總統）
-    output: 數個推文（以 "," 分隔）"""
+    Input: 關鍵詞（e.g. 總統）
+    Output: 數個推文（以 "," 分隔）
+    """
 
     def _run(self,
              query: str,
@@ -497,8 +502,10 @@ class GetUpvoteCommentsByKeyword(TempTool):
 class GetDownvoteCommentsByKeyword(TempTool):
     name = "get_downvote_comments_by_keyword"
     description = """獲得和指定關鍵詞相關的噓文
-    input: 關鍵詞（e.g. 總統）
-    output: 數個推文（以 "," 分隔）"""
+    Input: 關鍵詞（e.g. 總統）
+    Output: 數個推文（以 "," 分隔）
+    """
+
     def _run(self,
              query: str,
              run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
@@ -512,10 +519,6 @@ class GetDownvoteCommentsByKeyword(TempTool):
 
 
 if __name__ == "__main__":
-    # import glob
-    # filelist = [f.split("/")[-1].split("_")[-1][:-4]
-    #             for f in glob.glob("./HatePolitics/*/*.xml")]
-    # print(filelist[:3])
     # getKeywordsVote = GetKeywordsVote().run("蔡英文")
     # print(GetKeywordsVote().run("蔣萬安"))
     # print(GetKeywordsVote().run("高虹安"))
@@ -530,15 +533,4 @@ if __name__ == "__main__":
     # print(GetUpvoteCommentsByKeyword().run('水桶'))
     # print(GetUpvoteCommentsByKeyword().run('柯文哲'))
     print(GetNewsSummaryWithCrawler().run(''))
-
-    # post_ids = json.loads(GetPostIDsByDate().run("20230211"))
-    # pprint(post_ids)
-    # print(f"{len(post_ids)} posts")
-    # for post_id in post_ids:
-    #     print("="*10)
-    #     print(f"{GetUpvoteCount().run(post_id)} 推 - {GetDownvoteCount().run(post_id)} 噓 - {GetArrowCount().run(post_id)} 箭頭")
-    #     print(GetPostTitle().run(post_id))
-    #     print("\n".join(json.loads(GetPostBody().run(post_id))[:2]))
-
-    # print(json.loads(GetPttPostsKeywordsByDate().run("20230211")))
     pass
