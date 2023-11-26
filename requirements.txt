@@ -1,4 +1,4 @@
-langchain==0.0.236
+langchain==0.0.329
 scikit-learn==1.2.1
 bs4
 requests

@@ -57,7 +57,7 @@ jupyter_client @ file:///home/conda/feedstock_root/build_artifacts/jupyter_clien
 jupyter_core @ file:///home/conda/feedstock_root/build_artifacts/jupyter_core_1675109852367/work
 jupyterlab-widgets @ file:///home/conda/feedstock_root/build_artifacts/jupyterlab_widgets_1671722028097/work
 kiwisolver==1.4.4
-langchain==0.0.236
+langchain==0.0.329
 langcodes==3.3.0
 lxml==4.9.2
 markdown-it-py==2.2.0
